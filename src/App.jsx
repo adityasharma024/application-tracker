@@ -1,85 +1,61 @@
-import { useState } from 'react';
-import Input from './Components/common/Input.jsx';
+import Layout from './Components/Layout/Layout.jsx';
 
 function App() {
-  // State for each input field
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [dateApplied, setDateApplied] = useState("");
-  
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevents page refresh
-    
-    // Log the values
-    console.log("Company:", company);
-    console.log("Role:", role);
-    console.log("Date:", dateApplied);
-    
-    // Show alert
-    alert(`Application for ${role} at ${company} saved!`);
-    
-    // Clear form
-    setCompany("");
-    setRole("");
-    setDateApplied("");
-  }
-  
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800">
-          Add Job Application
+    <Layout>
+      {/* Everything here appears in the main content area */}
+      
+      <div className="max-w-4xl">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Welcome to Job Tracker! 🎉
         </h1>
+        <p className="text-gray-600 mb-8">
+          Day 4: Layout structure is complete!
+        </p>
         
-        <form onSubmit={handleSubmit}>
-          {/* Company Input */}
-          <Input
-            label="Company Name"
-            placeholder="e.g., Google, Microsoft"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            required
-          />
+        {/* Example Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* Role Input */}
-          <Input
-            label="Job Role"
-            placeholder="e.g., Frontend Developer"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            required
-          />
-          
-          {/* Date Input */}
-          <Input
-            label="Date Applied"
-            type="date"
-            value={dateApplied}
-            onChange={(e) => setDateApplied(e.target.value)}
-            required
-          />
-          
-          {/* Display current values (for learning) */}
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm font-semibold text-gray-700 mb-2">
-              Current Values (State):
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Dashboard
+            </h2>
+            <p className="text-gray-600">
+              Track all your applications in one place. See stats, active interviews, and recent updates.
             </p>
-            <p className="text-sm text-gray-600">Company: {company || "(empty)"}</p>
-            <p className="text-sm text-gray-600">Role: {role || "(empty)"}</p>
-            <p className="text-sm text-gray-600">Date: {dateApplied || "(empty)"}</p>
           </div>
           
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-          >
-            Save Application
-          </button>
-        </form>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Applications
+            </h2>
+            <p className="text-gray-600">
+              Manage your job applications. Add new ones, update status, and track progress.
+            </p>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Calendar
+            </h2>
+            <p className="text-gray-600">
+              Schedule and track your interviews. Never miss an important date.
+            </p>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Settings
+            </h2>
+            <p className="text-gray-600">
+              Customize your experience. Set reminders and preferences.
+            </p>
+          </div>
+          
+        </div>
       </div>
-    </div>
+      
+    </Layout>
   );
 }
 
