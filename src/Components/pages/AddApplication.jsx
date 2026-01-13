@@ -1,15 +1,21 @@
+
 import { useState } from 'react';
 import Input from '../common/Input.jsx';
-import Select from  './../common/Select.jsx';
+import Select from '../common/Select.jsx';
+import Textarea from '../common/Textarea.jsx';
 
 function AddApplication() {
-  // State for each form field
+  // Form state
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [jobType, setJobType] = useState("");
   const [status, setStatus] = useState("");
   const [dateApplied, setDateApplied] = useState("");
   const [applicationUrl, setApplicationUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  
+  // Error state for each field
+  const [errors, setErrors] = useState({});
   
   // Job Type options
   const jobTypeOptions = [
@@ -26,32 +32,114 @@ function AddApplication() {
     { value: 'rejected', label: 'Rejected' }
   ];
   
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Company validation
+    if (!company.trim()) {
+      newErrors.company = "Company name is required";
+    } else if (company.trim().length < 2) {
+      newErrors.company = "Company name must be at least 2 characters";
+    }
+    
+    // Role validation
+    if (!role.trim()) {
+      newErrors.role = "Job role is required";
+    } else if (role.trim().length < 2) {
+      newErrors.role = "Job role must be at least 2 characters";
+    }
+    
+    // Job Type validation
+    if (!jobType) {
+      newErrors.jobType = "Please select a job type";
+    }
+    
+    // Status validation
+    if (!status) {
+      newErrors.status = "Please select current status";
+    }
+    
+    // Date validation
+    if (!dateApplied) {
+      newErrors.dateApplied = "Date applied is required";
+    } else {
+      // Check if date is not in the future
+      const selectedDate = new Date(dateApplied);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        newErrors.dateApplied = "Date cannot be in the future";
+      }
+    }
+    
+    // URL validation (optional field, but validate format if provided)
+    if (applicationUrl && applicationUrl.trim()) {
+      // Simple URL validation
+      const urlPattern = /^https?:\/\/.+/;
+      if (!urlPattern.test(applicationUrl)) {
+        newErrors.applicationUrl = "Please enter a valid URL (must start with http:// or https://)";
+      }
+    }
+    
+    // Notes validation (optional, but check length if provided)
+    if (notes && notes.length > 500) {
+      newErrors.notes = "Notes must be less than 500 characters";
+    }
+    
+    return newErrors;
+  };
+  
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Validate form
+    const formErrors = validateForm();
+    
+    // If there are errors, set them and stop submission
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      // Scroll to top to see errors
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // Clear any previous errors
+    setErrors({});
+    
     // Create application object
     const applicationData = {
-      company,
-      role,
+      company: company.trim(),
+      role: role.trim(),
       jobType,
       status,
       dateApplied,
-      applicationUrl,
-      createdAt: new Date().toISOString()
+      applicationUrl: applicationUrl.trim(),
+      notes: notes.trim(),
+      createdAt: new Date().toISOString(),
+      id: Date.now() // Temporary ID (we'll use proper IDs with Redux later)
     };
     
-    // For now, just log it (we'll use Redux later)
-    console.log("Application Data:", applicationData);
-    alert(`Application for ${role} at ${company} added successfully!`);
+    // For now, just log it
+    console.log("✅ Application Data:", applicationData);
+    alert(`✅ Application for ${role} at ${company} added successfully!`);
     
     // Clear form
+    clearForm();
+  };
+  
+  // Clear form function
+  const clearForm = () => {
     setCompany("");
     setRole("");
     setJobType("");
     setStatus("");
     setDateApplied("");
     setApplicationUrl("");
+    setNotes("");
+    setErrors({});
   };
   
   return (
@@ -67,6 +155,25 @@ function AddApplication() {
         </p>
       </div>
       
+      {/* Error Summary (if there are errors) */}
+      {Object.keys(errors).length > 0 && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <span className="text-red-600 text-xl mr-3">⚠️</span>
+            <div>
+              <h3 className="text-red-800 font-semibold mb-2">
+                Please fix the following errors:
+              </h3>
+              <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+                {Object.values(errors).map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Form Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <form onSubmit={handleSubmit}>
@@ -77,8 +184,15 @@ function AddApplication() {
             name="company"
             placeholder="e.g., Google, Microsoft, Amazon"
             value={company}
-            onChange={(e) => setCompany(e.target.value)}
+            onChange={(e) => {
+              setCompany(e.target.value);
+              // Clear error when user starts typing
+              if (errors.company) {
+                setErrors({ ...errors, company: null });
+              }
+            }}
             required
+            error={errors.company}
             helperText="Enter the name of the company you're applying to"
           />
           
@@ -88,33 +202,55 @@ function AddApplication() {
             name="role"
             placeholder="e.g., Frontend Developer, Software Engineer"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => {
+              setRole(e.target.value);
+              if (errors.role) {
+                setErrors({ ...errors, role: null });
+              }
+            }}
             required
+            error={errors.role}
             helperText="What position are you applying for?"
           />
           
-          {/* Job Type */}
-          <Select
-            label="Job Type"
-            name="jobType"
-            placeholder="Select job type"
-            value={jobType}
-            onChange={(e) => setJobType(e.target.value)}
-            options={jobTypeOptions}
-            required
-          />
-          
-          {/* Status */}
-          <Select
-            label="Current Status"
-            name="status"
-            placeholder="Select current status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            options={statusOptions}
-            required
-            helperText="Where are you in the application process?"
-          />
+          {/* Two columns for Job Type and Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Job Type */}
+            <Select
+              label="Job Type"
+              name="jobType"
+              placeholder="Select job type"
+              value={jobType}
+              onChange={(e) => {
+                setJobType(e.target.value);
+                if (errors.jobType) {
+                  setErrors({ ...errors, jobType: null });
+                }
+              }}
+              options={jobTypeOptions}
+              required
+              error={errors.jobType}
+            />
+            
+            {/* Status */}
+            <Select
+              label="Current Status"
+              name="status"
+              placeholder="Select status"
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                if (errors.status) {
+                  setErrors({ ...errors, status: null });
+                }
+              }}
+              options={statusOptions}
+              required
+              error={errors.status}
+            />
+            
+          </div>
           
           {/* Date Applied */}
           <Input
@@ -122,8 +258,15 @@ function AddApplication() {
             name="dateApplied"
             type="date"
             value={dateApplied}
-            onChange={(e) => setDateApplied(e.target.value)}
+            onChange={(e) => {
+              setDateApplied(e.target.value);
+              if (errors.dateApplied) {
+                setErrors({ ...errors, dateApplied: null });
+              }
+            }}
             required
+            error={errors.dateApplied}
+            helperText="When did you submit this application?"
           />
           
           {/* Application URL (Optional) */}
@@ -133,30 +276,45 @@ function AddApplication() {
             type="url"
             placeholder="https://company.com/jobs/123"
             value={applicationUrl}
-            onChange={(e) => setApplicationUrl(e.target.value)}
+            onChange={(e) => {
+              setApplicationUrl(e.target.value);
+              if (errors.applicationUrl) {
+                setErrors({ ...errors, applicationUrl: null });
+              }
+            }}
+            error={errors.applicationUrl}
             helperText="Link to the job posting (optional)"
+          />
+          
+          {/* Notes */}
+          <Textarea
+            label="Notes"
+            name="notes"
+            placeholder="Add any notes about this application (interview tips, contact person, etc.)"
+            value={notes}
+            onChange={(e) => {
+              setNotes(e.target.value);
+              if (errors.notes) {
+                setErrors({ ...errors, notes: null });
+              }
+            }}
+            rows={5}
+            error={errors.notes}
+            helperText="Optional: Add any relevant notes (max 500 characters)"
           />
           
           {/* Action Buttons */}
           <div className="flex space-x-3 mt-6">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
-              Add Application
+              <span>Add Application</span>
             </button>
             
             <button
               type="button"
-              onClick={() => {
-                // Clear all fields
-                setCompany("");
-                setRole("");
-                setJobType("");
-                setStatus("");
-                setDateApplied("");
-                setApplicationUrl("");
-              }}
+              onClick={clearForm}
               className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Clear
@@ -164,21 +322,6 @@ function AddApplication() {
           </div>
           
         </form>
-      </div>
-      
-      {/* Preview Card (For Learning) */}
-      <div className="mt-6 bg-gray-50 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-3">
-          Current Form Values (State):
-        </h3>
-        <div className="space-y-1 text-sm">
-          <p><strong>Company:</strong> {company || "(empty)"}</p>
-          <p><strong>Role:</strong> {role || "(empty)"}</p>
-          <p><strong>Job Type:</strong> {jobType || "(empty)"}</p>
-          <p><strong>Status:</strong> {status || "(empty)"}</p>
-          <p><strong>Date Applied:</strong> {dateApplied || "(empty)"}</p>
-          <p><strong>URL:</strong> {applicationUrl || "(empty)"}</p>
-        </div>
       </div>
       
     </div>
