@@ -3,7 +3,7 @@ import applicationReducer from './slices/sliceApplication';
 
 const store=configureStore({
     reducer:{
-        application:applicationReducer
+        applications:applicationReducer
     },
     devTools:true,
 });

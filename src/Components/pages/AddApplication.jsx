@@ -3,9 +3,12 @@ import { useState } from 'react';
 import Input from '../common/Input.jsx';
 import Select from '../common/Select.jsx';
 import Textarea from '../common/Textarea.jsx';
+import { useDispatch } from 'react-redux';
+import { addApplication } from '../../redux/slices/sliceApplication.js';
 
 function AddApplication() {
   // Form state
+  const dispatch=useDispatch();
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [jobType, setJobType] = useState("");
@@ -121,9 +124,9 @@ function AddApplication() {
       createdAt: new Date().toISOString(),
       id: Date.now() // Temporary ID (we'll use proper IDs with Redux later)
     };
-    
+    dispatch(addApplication(applicationData));
     // For now, just log it
-    console.log("✅ Application Data:", applicationData);
+    
     alert(`✅ Application for ${role} at ${company} added successfully!`);
     
     // Clear form

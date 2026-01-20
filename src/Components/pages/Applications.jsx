@@ -1,0 +1,119 @@
+import { useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { Briefcase } from 'lucide-react';
+import ApplicationCard from '../application/ApplicationCard';
+import FilterBar from '../application/FilterBar';
+function Applications() {
+  // Get applications from Redux
+  const applications = useSelector((state) => state.applications.applications);
+  
+  // Filter and sort state
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  
+  // Filter and sort applications
+  const filteredAndSortedApplications = useMemo(() => {
+    let result = [...applications];
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(app => app.status === statusFilter);
+    }
+    
+    // Apply sorting
+    switch (sortBy) {
+      case 'newest':
+        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+      case 'oldest':
+        result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        break;
+      case 'company':
+        result.sort((a, b) => a.company.localeCompare(b.company));
+        break;
+      case 'status':
+        result.sort((a, b) => a.status.localeCompare(b.status));
+        break;
+      default:
+        break;
+    }
+    
+    return result;
+  }, [applications, statusFilter, sortBy]);
+  
+  return (
+    <div className="max-w-5xl mx-auto">
+      
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          My Applications
+        </h1>
+        <p className="text-gray-600">
+          Track and manage all your job applications in one place
+        </p>
+      </div>
+      
+      {/* Show filter bar only if there are applications */}
+      {applications.length > 0 && (
+        <FilterBar
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          totalCount={filteredAndSortedApplications.length}
+        />
+      )}
+      
+      {/* Applications List or Empty State */}
+      {applications.length === 0 ? (
+        
+        /* Empty State - No applications at all */
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            No Applications Yet
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Start tracking your job applications by adding your first one!
+          </p>
+          <p className="text-sm text-gray-500">
+            Click "Add Application" above to get started
+          </p>
+        </div>
+        
+      ) : filteredAndSortedApplications.length === 0 ? (
+        
+        /* Empty State - Filter returned no results */
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            No Applications Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            No applications match the current filter
+          </p>
+          <button
+            onClick={() => setStatusFilter('all')}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            Clear Filters
+          </button>
+        </div>
+        
+      ) : (
+        
+        /* Applications Grid */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filteredAndSortedApplications.map((app) => (
+            <ApplicationCard key={app.id} application={app} />
+          ))}
+        </div>
+        
+      )}
+      
+    </div>
+  );
+}
+
+export default Applications;

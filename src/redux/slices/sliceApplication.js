@@ -6,14 +6,14 @@ const initialState = {
     error:null
 };
 const applicationSlice=createSlice({
-    name:'application',
+    name:'applications',
     initialState,
     reducers:{
         addApplication:(state,action)=>{
             state.applications.push(action.payload);
         },
         deleteApplication:(state,action)=>{
-            state.applicatons=state.applications.filter(
+            state.applications=state.applications.filter(
                 app=>app.id!==action.payload
             );
         },
