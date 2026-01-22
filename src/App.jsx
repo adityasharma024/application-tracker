@@ -8,7 +8,14 @@ import { useState } from 'react';
 function App() {
   const [currentPage, setCurrentPage] = useState('addApplication');
   const applications = useSelector((state) => state.applications.applications);
-
+  const [editingApplication, setEditingApplication]=useState(null);
+  const handleEdit=(application)=>{
+    setEditingApplication(application);
+    setCurrentPage('addApplication');
+  };
+  const handleCancelEdit=()=>{
+    setEditingApplication(null);
+  };
   return (
     <Layout>
       
@@ -23,18 +30,27 @@ function App() {
         
         <div className="flex space-x-2">
           <button 
-            onClick={() => setCurrentPage('addApplication')}
+            onClick={()=>{
+              setCurrentPage('addApplication');
+              setEditingApplication(null);
+            }}
+            
+
+            
             className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
               currentPage === 'addApplication' 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-white text-blue-600 hover:bg-blue-50'
             }`}
           >
-            ➕ Add Application
+            ➕ {editingApplication ? 'Cancel Edit' : 'Add Application'}
           </button>
           
           <button
-            onClick={() => setCurrentPage('view')}
+            onClick={()=>{
+              setCurrentPage('view');
+              setEditingApplication(null);
+            }}
             className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
               currentPage === 'view'
                 ? 'bg-blue-600 text-white'
@@ -45,7 +61,10 @@ function App() {
           </button>
           
           <button 
-            onClick={() => setCurrentPage('settings')}
+            onClick={()=>{
+              setCurrentPage('settings');
+              setEditingApplication(null);
+            }}
             className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
               currentPage === 'settings' 
                 ? 'bg-blue-600 text-white' 
@@ -58,8 +77,16 @@ function App() {
       </div>
       
       {/* Show page based on state */}
-      {currentPage === 'addApplication' && <AddApplication />}
-      {currentPage === 'view' && <Applications />}  {/* ← Add this line */}
+      {currentPage === 'addApplication' &&
+      <AddApplication
+          editingApplication={editingApplication}
+          onCancelEdit={handleCancelEdit}
+          onEditComplete={()=>{
+            setEditingApplication(null);
+            setCurrentPage('view');
+          }}
+      />}
+      {currentPage === 'view' && <Applications onEdit={handleEdit} />}  {/* ← Add this line */}
       {currentPage === 'settings' && <Settings />}
       
     </Layout>

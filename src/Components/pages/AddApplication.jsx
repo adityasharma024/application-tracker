@@ -1,14 +1,13 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Input from '../common/Input.jsx';
 import Select from '../common/Select.jsx';
 import Textarea from '../common/Textarea.jsx';
 import { useDispatch } from 'react-redux';
-import { addApplication } from '../../redux/slices/sliceApplication.js';
+import { addApplication, updateApplication } from '../../redux/slices/sliceApplication.js';
 
-function AddApplication() {
+function AddApplication({ editingApplication, onCancelEdit, onEditComplete }) {
   // Form state
-  const dispatch=useDispatch();
+  const dispatch = useDispatch();
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [jobType, setJobType] = useState("");
@@ -16,16 +15,30 @@ function AddApplication() {
   const [dateApplied, setDateApplied] = useState("");
   const [applicationUrl, setApplicationUrl] = useState("");
   const [notes, setNotes] = useState("");
-  
+  const isEditMode = !!editingApplication;
+
   // Error state for each field
   const [errors, setErrors] = useState({});
-  
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingApplication) {
+      setCompany(editingApplication.company || "");
+      setRole(editingApplication.role || "");
+      setJobType(editingApplication.jobType || "");
+      setStatus(editingApplication.status || "");
+      setDateApplied(editingApplication.dateApplied || "");
+      setApplicationUrl(editingApplication.applicationUrl || "");
+      setNotes(editingApplication.notes || "");
+    }
+  }, [editingApplication]);
+
   // Job Type options
   const jobTypeOptions = [
     { value: 'internship', label: 'Internship' },
     { value: 'fulltime', label: 'Full-time' }
   ];
-  
+
   // Status options
   const statusOptions = [
     { value: 'applied', label: 'Applied' },
@@ -34,35 +47,35 @@ function AddApplication() {
     { value: 'offer', label: 'Offer' },
     { value: 'rejected', label: 'Rejected' }
   ];
-  
+
   // Validation function
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Company validation
     if (!company.trim()) {
       newErrors.company = "Company name is required";
     } else if (company.trim().length < 2) {
       newErrors.company = "Company name must be at least 2 characters";
     }
-    
+
     // Role validation
     if (!role.trim()) {
       newErrors.role = "Job role is required";
     } else if (role.trim().length < 2) {
       newErrors.role = "Job role must be at least 2 characters";
     }
-    
+
     // Job Type validation
     if (!jobType) {
       newErrors.jobType = "Please select a job type";
     }
-    
+
     // Status validation
     if (!status) {
       newErrors.status = "Please select current status";
     }
-    
+
     // Date validation
     if (!dateApplied) {
       newErrors.dateApplied = "Date applied is required";
@@ -71,12 +84,12 @@ function AddApplication() {
       const selectedDate = new Date(dateApplied);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate > today) {
         newErrors.dateApplied = "Date cannot be in the future";
       }
     }
-    
+
     // URL validation (optional field, but validate format if provided)
     if (applicationUrl && applicationUrl.trim()) {
       // Simple URL validation
@@ -85,22 +98,22 @@ function AddApplication() {
         newErrors.applicationUrl = "Please enter a valid URL (must start with http:// or https://)";
       }
     }
-    
+
     // Notes validation (optional, but check length if provided)
     if (notes && notes.length > 500) {
       newErrors.notes = "Notes must be less than 500 characters";
     }
-    
+
     return newErrors;
   };
-  
+
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate form
     const formErrors = validateForm();
-    
+
     // If there are errors, set them and stop submission
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
@@ -108,31 +121,48 @@ function AddApplication() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    
+
     // Clear any previous errors
     setErrors({});
-    
-    // Create application object
-    const applicationData = {
-      company: company.trim(),
-      role: role.trim(),
-      jobType,
-      status,
-      dateApplied,
-      applicationUrl: applicationUrl.trim(),
-      notes: notes.trim(),
-      createdAt: new Date().toISOString(),
-      id: Date.now() // Temporary ID (we'll use proper IDs with Redux later)
-    };
-    dispatch(addApplication(applicationData));
-    // For now, just log it
-    
-    alert(`✅ Application for ${role} at ${company} added successfully!`);
-    
-    // Clear form
-    clearForm();
+
+    if (isEditMode) {
+      const updatedApplication = {
+        id: editingApplication.id,
+        updatedData: {
+          company: company.trim(),
+          role: role.trim(),
+          jobType,
+          status,
+          dateApplied,
+          applicationUrl: applicationUrl.trim(),
+          notes: notes.trim(),
+          updatedAt: new Date().toISOString()
+        }
+      };
+      dispatch(updateApplication(updatedApplication));
+      alert(`✅ Application for ${role} at ${company} updated successfully!`);
+      if (onEditComplete) {
+        onEditComplete();
+      }
+      clearForm();
+    } else {
+      const newApplication = {
+        id: Date.now(),
+        company: company.trim(),
+        role: role.trim(),
+        jobType,
+        status,
+        dateApplied,
+        applicationUrl: applicationUrl.trim(),
+        notes: notes.trim(),
+        createdAt: new Date().toISOString()
+      };
+      dispatch(addApplication(newApplication));
+      alert(`✅ Application for ${role} at ${company} added successfully!`);
+      clearForm();
+    }
   };
-  
+
   // Clear form function
   const clearForm = () => {
     setCompany("");
@@ -144,20 +174,28 @@ function AddApplication() {
     setNotes("");
     setErrors({});
   };
-  
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    clearForm();
+    if (onCancelEdit) {
+      onCancelEdit();
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
-      
+
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Add New Application
+          {isEditMode ? 'Edit Application' : 'Add New Application'}
         </h1>
         <p className="text-gray-600">
-          Fill in the details of your job application
+          {isEditMode ? 'Update the details of your job application' : 'Fill in the details of your job application'}
         </p>
       </div>
-      
+
       {/* Error Summary (if there are errors) */}
       {Object.keys(errors).length > 0 && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -176,11 +214,11 @@ function AddApplication() {
           </div>
         </div>
       )}
-      
+
       {/* Form Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <form onSubmit={handleSubmit}>
-          
+
           {/* Company Name */}
           <Input
             label="Company Name"
@@ -198,7 +236,7 @@ function AddApplication() {
             error={errors.company}
             helperText="Enter the name of the company you're applying to"
           />
-          
+
           {/* Job Role */}
           <Input
             label="Job Role"
@@ -215,10 +253,10 @@ function AddApplication() {
             error={errors.role}
             helperText="What position are you applying for?"
           />
-          
+
           {/* Two columns for Job Type and Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
+
             {/* Job Type */}
             <Select
               label="Job Type"
@@ -235,7 +273,7 @@ function AddApplication() {
               required
               error={errors.jobType}
             />
-            
+
             {/* Status */}
             <Select
               label="Current Status"
@@ -252,9 +290,9 @@ function AddApplication() {
               required
               error={errors.status}
             />
-            
+
           </div>
-          
+
           {/* Date Applied */}
           <Input
             label="Date Applied"
@@ -271,7 +309,7 @@ function AddApplication() {
             error={errors.dateApplied}
             helperText="When did you submit this application?"
           />
-          
+
           {/* Application URL (Optional) */}
           <Input
             label="Application URL"
@@ -288,7 +326,7 @@ function AddApplication() {
             error={errors.applicationUrl}
             helperText="Link to the job posting (optional)"
           />
-          
+
           {/* Notes */}
           <Textarea
             label="Notes"
@@ -305,28 +343,38 @@ function AddApplication() {
             error={errors.notes}
             helperText="Optional: Add any relevant notes (max 500 characters)"
           />
-          
+
           {/* Action Buttons */}
           <div className="flex space-x-3 mt-6">
             <button
               type="submit"
               className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
-              <span>Add Application</span>
+              <span>{isEditMode ? 'Update Application' : 'Add Application'}</span>
             </button>
-            
-            <button
-              type="button"
-              onClick={clearForm}
-              className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Clear
-            </button>
+
+            {isEditMode ? (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={clearForm}
+                className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
-          
+
         </form>
       </div>
-      
+
     </div>
   );
 }

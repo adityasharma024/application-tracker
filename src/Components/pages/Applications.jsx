@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Briefcase } from 'lucide-react';
 import ApplicationCard from '../application/ApplicationCard';
 import FilterBar from '../application/FilterBar';
-function Applications() {
+import { deleteApplication } from '../../redux/slices/sliceApplication';
+
+
+function Applications({onEdit}) {
   // Get applications from Redux
   const applications = useSelector((state) => state.applications.applications);
+  const dispatch = useDispatch();  // Get dispatch function
   
   // Filter and sort state
   const [statusFilter, setStatusFilter] = useState('all');
@@ -40,6 +44,31 @@ function Applications() {
     
     return result;
   }, [applications, statusFilter, sortBy]);
+  
+  // Handle delete with confirmation
+  const handleDelete = (id) => {
+    // Find the application to show in confirmation
+    const app = applications.find(a => a.id === id);
+    
+    if (!app) return;
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the application for ${app.role} at ${app.company}?\n\nThis action cannot be undone.`
+    );
+    
+    if (confirmed) {
+      dispatch(deleteApplication(id));
+      
+      // Optional: Show success message
+      alert(`✅ Application for ${app.role} at ${app.company} has been deleted.`);
+    }
+  };
+  
+  // Handle edit - will implement in next part
+  const handleEdit = (application) => {
+    onEdit(application);
+  };
   
   return (
     <div className="max-w-5xl mx-auto">
@@ -106,7 +135,12 @@ function Applications() {
         /* Applications Grid */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filteredAndSortedApplications.map((app) => (
-            <ApplicationCard key={app.id} application={app} />
+            <ApplicationCard 
+              key={app.id} 
+              application={app}
+              onEdit={handleEdit}     
+              onDelete={handleDelete}  
+            />
           ))}
         </div>
         
