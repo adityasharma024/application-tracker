@@ -3,7 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Briefcase } from 'lucide-react';
 import ApplicationCard from '../application/ApplicationCard';
 import FilterBar from '../application/FilterBar';
-import { deleteApplication } from '../../redux/slices/sliceApplication';
+import { deleteApplication,updateApplicationStatus } from '../../redux/slices/sliceApplication';
+import StatsDashboard from '../application/StatsDashboard';
+
 
 
 function Applications({onEdit}) {
@@ -69,6 +71,9 @@ function Applications({onEdit}) {
   const handleEdit = (application) => {
     onEdit(application);
   };
+  const handleStatusChange = (id, newStatus) => {
+    dispatch(updateApplicationStatus({ id, newStatus }));
+  };
   
   return (
     <div className="max-w-5xl mx-auto">
@@ -82,6 +87,7 @@ function Applications({onEdit}) {
           Track and manage all your job applications in one place
         </p>
       </div>
+      {applications.length > 0 && <StatsDashboard applications={applications} />}
       
       {/* Show filter bar only if there are applications */}
       {applications.length > 0 && (
@@ -139,7 +145,8 @@ function Applications({onEdit}) {
               key={app.id} 
               application={app}
               onEdit={handleEdit}     
-              onDelete={handleDelete}  
+              onDelete={handleDelete} 
+              onStatusChange={handleStatusChange} 
             />
           ))}
         </div>
