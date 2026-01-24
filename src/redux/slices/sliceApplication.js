@@ -19,8 +19,15 @@ const applicationSlice = createSlice({
         (app) => app.id !== action.payload
       );
     },
-    
+    bulkDeleteApplications:(state,action)=>{
+        const idsToDelete=action.payload;
+        state.applications=state.applications.filter(
+            app=>!idsToDelete.includes(app.id)
+        );
 
+    },
+
+    
 
     updateApplication: (state, action) => {
       const index = state.applications.findIndex(
@@ -73,6 +80,7 @@ export const {
   updateApplication,
   updateApplicationStatus,
   clearAllApplications,
+  bulkDeleteApplications
 } = applicationSlice.actions;
 
 export default applicationSlice.reducer;

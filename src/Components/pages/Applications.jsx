@@ -1,95 +1,142 @@
-import { useState, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Briefcase } from 'lucide-react';
-import ApplicationCard from '../application/ApplicationCard';
-import FilterBar from '../application/FilterBar';
-import { deleteApplication,updateApplicationStatus } from '../../redux/slices/sliceApplication';
-import StatsDashboard from '../application/StatsDashboard';
+import { useState, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Briefcase, CheckSquare, Square } from "lucide-react";
 
+import ApplicationCard from "../application/ApplicationCard";
+import FilterBar from "../application/FilterBar";
+import StatsDashboard from "../application/StatsDashboard";
+import BulkActionToolbar from "../application/BulkActionToolbar";
 
+import {
+  deleteApplication,
+  updateApplicationStatus,
+  bulkDeleteApplications,
+} from "../../redux/slices/sliceApplication";
 
-function Applications({onEdit}) {
-  // Get applications from Redux
-  const applications = useSelector((state) => state.applications.applications);
-  const dispatch = useDispatch();  // Get dispatch function
-  
-  // Filter and sort state
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
-  
-  // Filter and sort applications
+function Applications({ onEdit }) {
+  const applications = useSelector(
+    (state) => state.applications.applications
+  );
+  const dispatch = useDispatch();
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  /* ---------------- FILTER + SORT ---------------- */
   const filteredAndSortedApplications = useMemo(() => {
     let result = [...applications];
-    
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      result = result.filter(app => app.status === statusFilter);
+
+    if (statusFilter !== "all") {
+      result = result.filter((app) => app.status === statusFilter);
     }
-    
-    // Apply sorting
+
     switch (sortBy) {
-      case 'newest':
-        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case "newest":
+        result.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
         break;
-      case 'oldest':
-        result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case "oldest":
+        result.sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
         break;
-      case 'company':
+      case "company":
         result.sort((a, b) => a.company.localeCompare(b.company));
         break;
-      case 'status':
+      case "status":
         result.sort((a, b) => a.status.localeCompare(b.status));
         break;
       default:
         break;
     }
-    
+
     return result;
   }, [applications, statusFilter, sortBy]);
-  
-  // Handle delete with confirmation
-  const handleDelete = (id) => {
-    // Find the application to show in confirmation
-    const app = applications.find(a => a.id === id);
-    
-    if (!app) return;
-    
-    // Show confirmation dialog
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the application for ${app.role} at ${app.company}?\n\nThis action cannot be undone.`
+
+  /* ---------------- SELECTION LOGIC ---------------- */
+  const allSelected =
+    filteredAndSortedApplications.length > 0 &&
+    selectedIds.length === filteredAndSortedApplications.length;
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((sid) => sid !== id)
+        : [...prev, id]
     );
-    
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIds(filteredAndSortedApplications.map((app) => app.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedIds([]);
+  };
+
+  /* ---------------- ACTIONS ---------------- */
+  const handleDelete = (id) => {
+    const app = applications.find((a) => a.id === id);
+    if (!app) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${app.role} at ${app.company}?`
+    );
+
     if (confirmed) {
       dispatch(deleteApplication(id));
-      
-      // Optional: Show success message
-      alert(`✅ Application for ${app.role} at ${app.company} has been deleted.`);
+      setSelectedIds((prev) => prev.filter((sid) => sid !== id));
     }
   };
-  
-  // Handle edit - will implement in next part
+
   const handleEdit = (application) => {
     onEdit(application);
   };
+
   const handleStatusChange = (id, newStatus) => {
     dispatch(updateApplicationStatus({ id, newStatus }));
   };
-  
+
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      `Delete ${selectedIds.length} selected application(s)?`
+    );
+
+    if (confirmed) {
+      dispatch(bulkDeleteApplications(selectedIds));
+      setSelectedIds([]);
+    }
+  };
+
+  /* ---------------- JSX ---------------- */
   return (
     <div className="max-w-5xl mx-auto">
-      
-      {/* Page Header */}
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           My Applications
         </h1>
         <p className="text-gray-600">
-          Track and manage all your job applications in one place
+          Track and manage all your job applications
         </p>
       </div>
-      {applications.length > 0 && <StatsDashboard applications={applications} />}
-      
-      {/* Show filter bar only if there are applications */}
+
+      {applications.length > 0 && (
+        <StatsDashboard applications={applications} />
+      )}
+
+      {selectedIds.length > 0 && (
+        <BulkActionToolbar
+          selectedCount={selectedIds.length}
+          onBulkDelete={handleBulkDelete}
+          onDeselectAll={handleDeselectAll}
+        />
+      )}
+
       {applications.length > 0 && (
         <FilterBar
           statusFilter={statusFilter}
@@ -99,60 +146,62 @@ function Applications({onEdit}) {
           totalCount={filteredAndSortedApplications.length}
         />
       )}
-      
-      {/* Applications List or Empty State */}
-      {applications.length === 0 ? (
-        
-        /* Empty State - No applications at all */
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-            No Applications Yet
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Start tracking your job applications by adding your first one!
-          </p>
-          <p className="text-sm text-gray-500">
-            Click "Add Application" above to get started
-          </p>
-        </div>
-        
-      ) : filteredAndSortedApplications.length === 0 ? (
-        
-        /* Empty State - Filter returned no results */
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            No Applications Found
-          </h2>
-          <p className="text-gray-600 mb-4">
-            No applications match the current filter
-          </p>
+
+      {/* Select All */}
+      {filteredAndSortedApplications.length > 0 && (
+        <div className="flex items-center space-x-3 mb-4">
           <button
-            onClick={() => setStatusFilter('all')}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+            onClick={allSelected ? handleDeselectAll : handleSelectAll}
+            className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-lg"
           >
-            Clear Filters
+            {allSelected ? (
+              <>
+                <CheckSquare className="w-4 h-4 text-blue-600" />
+                <span>Deselect All</span>
+              </>
+            ) : (
+              <>
+                <Square className="w-4 h-4 text-gray-400" />
+                <span>Select All</span>
+              </>
+            )}
           </button>
+
+          {selectedIds.length > 0 && (
+            <span className="text-sm text-gray-600">
+              {selectedIds.length} selected
+            </span>
+          )}
         </div>
-        
+      )}
+
+      {/* Content */}
+      {applications.length === 0 ? (
+        <div className="bg-white border p-12 text-center rounded-lg">
+          <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold">No Applications Yet</h2>
+        </div>
+      ) : filteredAndSortedApplications.length === 0 ? (
+        <div className="bg-white border p-12 text-center rounded-lg">
+          <h2 className="text-xl font-semibold">
+            No applications match filter
+          </h2>
+        </div>
       ) : (
-        
-        /* Applications Grid */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filteredAndSortedApplications.map((app) => (
-            <ApplicationCard 
-              key={app.id} 
+            <ApplicationCard
+              key={app.id}
               application={app}
-              onEdit={handleEdit}     
-              onDelete={handleDelete} 
-              onStatusChange={handleStatusChange} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
+              onToggleSelect={handleToggleSelect}
+              isSelected={selectedIds.includes(app.id)}
             />
           ))}
         </div>
-        
       )}
-      
     </div>
   );
 }
